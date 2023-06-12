@@ -1,0 +1,28 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!markdown
+
+# Code Note
+
+## Requier
+
+### App部分
+- 访问目标BMC
+- 对目标BMC进行引导,操作
+  - ipxe的引导文件
+- 修改目标主机的引导ISO,POST,redfish/mount floppy
+
+
+### Web服务部分
+  - 对应标准OS的ISO文件,操作系统安装文件
+  - 对引导所需的响应(该引导过程可以写入到引导文件中)
+  - 对应操作系统的安装应答信息
+  - 安装其他软件包的存储目录
+
+### 环境检查
+- 路由网络畅通
+  - 到目标主机的网络
+  - 从目标主机可以访问到当前计算机
+- 
