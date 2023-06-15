@@ -1,69 +1,150 @@
-### oncode
-git clone http://gitlab.omnicode.cn:30999/jingxi/oncode.git 
+### setup harbor
+```
+cat /etc/docker/daemon.json 
+{"log-driver":"json-file","log-opts":{"max-size":"100m"},"registry-mirrors":["https://mirror.baidubce.com"],"insecure-registries": ["http://gitlab.omnicode.cn:30888"]}
+```
+1. docker login
+2. docker tag ipxesrc:v01 gitlab.omnicode.cn:30888/ipxebootiso/ipxesrc:v1
+3. docker push gitlab.omnicode.cn:30888/ipxebootiso/ipxesrc:v1
+
+### nuget upload pack.
+
+```
+
+dotnet nuget push -s https://gitlab.omnicode.cn:30882/v3/index.json .\nugetConsoleApp.0.0.1.nupkg -k Developer200.
+
+```
 
 ### Remote SSh
+
 ```
+
 ssh jingxi@gitlab.omnicode.cn -p22022
+
 ```
+
 port scope 25000-25100/5000-5100
+
+  
 
 internal with jingxi@10.10.10.103 of fedora linux
 
-# docker remove empty <none> images
+  ## Docker build img
 ```
-jingxi@vms:~$ docker rmi $(docker images --filter "dangling=true" -q --no-trunc)
+docker commit -a "vellhe" -m "py3.6_tf1.8_keras2.2" 00ff1b764a1b tf_keras:v1
 ```
-# docker commit container
+
+## dotnet test debug output
 
 ```
-jingxi@vms:~$ docker commit -m="add file" -a="jingxi" d2ed ipxesrc:v0
+dotnet test -l "console;verbosity=detailed"
 ```
+  
+  
 
 ### Git Store password
+
 git config --global credential.helper store
+
 git config --global user.email "jingxi@me.com"
+
 git config --global user.name "jingxi"
 
-# Working with NuGet packages
+  
+  
 
-The C# and F# kernels in .NET Interactive allow you to import NuGet packages into your interactive session using the `#r nuget` magic command. The syntax is the same in both languages.
+### Mindmap Note
 
-To import the latest version a package, you can use `#r nuget` without specifying a version number:
+  
 
-```csharp
-#r "nuget:System.Text.Json"
+```mermaid
+
+graph LR
+
+y(core)-->A(industry)-->B2(MFG)
+
+B2-->C1(GoCode)
+
+B2-->C2(PCode)
+
 ```
 
-If you'd like to use a specific version, you can specify it like this:
+  
 
-```csharp
-#r "nuget:System.Text.Json,4.7.2"
+### CI/CD
+
 ```
 
-If you're looking for the latest pre-release version, you can specify it like this:
+  
 
-```csharp
-#r "nuget:System.Text.Json,*-*"
+stages:          # List of stages for jobs, and their order of execution
+
+  - build
+
+  - test
+
+  - deploy
+
+# image: mcr.microsoft.com/dotnet/sdk:6.0.406-jammy-amd64
+
+build-job:       # This job runs in the build stage, which runs first.
+
+  stage: build
+
+  script:
+
+    - echo "Compiling the code..."
+
+    - ls
+
+    - dotnet restore
+
+    - echo "Compile complete."
+
+unit-test-job:   # This job runs in the test stage.
+
+  stage: test    # It only starts when the job in the build stage completes successfully.
+
+  script:
+
+    - echo "Running unit tests... This will take about 60 seconds."
+
+    - echo "sleep 60"
+
+    #- dotnet test --no-build -c Release   -l  "trx;LogFileName=../../testRes.trx"
+
+    - dotnet test   -l  "trx;LogFileName=../../testRes.trx"
+
+    #- echo "Code coverage is 90%"
+
+  after_script:
+
+     - /root/.dotnet/tools/trx2junit testRes.trx
+
+  artifacts:
+
+    when: always
+
+    paths: ['testRes.xml']
+
+    expose_as: 'testing report'
+
+    reports:
+
+      junit: testRes.xml
+
+  
+
+deploy-job:      # This job runs in the deploy stage.
+
+  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+
+  script:
+
+    - echo "Deploying application..."
+
+    - echo "Application successfully deployed."
+
+  
+
 ```
-
-## Adding a Nuget Source
-
-If your nuget package is not hosted on the main Nuget feed you can specify an alternative nuget source using `#i`. 
-
-### Remote Nuget Sources
-
-It is common for organizations to store packages on a private or pre-release feed. In the following example we are adding the [dotnet project](https://github.com/dotnet) pre-release nuget feed.
-
-```csharp
-#i "nuget:https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
-```
-
-### Local Nuget Sources
-
-You may also use a local folder as a nuget source:
-
-```csharp
-#i "nuget:C:\myorg\mypackage\src\bin\Release"
-#r "nuget:MyOrg.MyPackage"
-```
-
