@@ -1,9 +1,17 @@
+### add -v file in container with dev
+```
+ docker run --rm -it -v /home/jingxi/DockerMntFiles/dev:/
+root/.vscode-server mcr.microsoft.com/dotnet/sdk:7.0.304-jammy-amd64 
+```
+
+###  nuget upload pack.
 ### setup harbor
 ```
 cat /etc/docker/daemon.json 
 {"log-driver":"json-file","log-opts":{"max-size":"100m"},"registry-mirrors":["https://mirror.baidubce.com"],"insecure-registries": ["http://gitlab.omnicode.cn:30888"]}
 ```
-1. docker login
+0. add the name of project on the harbor.
+1. docker login http://gitlab.omnicode.cn:30888
 2. docker tag ipxesrc:v01 gitlab.omnicode.cn:30888/ipxebootiso/ipxesrc:v1
 3. docker push gitlab.omnicode.cn:30888/ipxebootiso/ipxesrc:v1
 
@@ -13,6 +21,15 @@ cat /etc/docker/daemon.json
 
 dotnet nuget push -s https://gitlab.omnicode.cn:30882/v3/index.json .\nugetConsoleApp.0.0.1.nupkg -k Developer200.
 
+```
+
+### cockpit
+
+```sh
+	sudo yum install cockpit -y
+    sudo systemctl enable --now cockpit.socket
+    sudo firewall-cmd --permanent --zone=public --add-service=cockpit
+    sudo firewall-cmd --reload
 ```
 
 ### Remote SSh
@@ -147,4 +164,79 @@ deploy-job:      # This job runs in the deploy stage.
 
   
 
+```
+
+
+```yaml
+  
+stages:
+
+# List of stages for jobs, and their order of execution
+
+    - build
+
+    - test
+
+    - deploy
+
+# image: mcr.microsoft.com/dotnet/sdk:6.0.406-jammy-amd64
+
+  
+
+build-job:
+
+    stage: build
+
+    script:
+
+    - echo "Compiling the code..."
+
+    - ls
+
+    - dotnet restore
+
+    - echo "Compile complete."
+
+  
+
+unit-test-job:
+
+    stage: test
+
+    script:
+
+    - echo "Running unit tests... This will take about 60 seconds."
+
+    - echo "sleep 60"  #- dotnet test --no-build -c Release   -l  "trx;LogFileName=../../testRes.trx"
+
+    - dotnet test   -l  "trx;LogFileName=../../testRes.trx"
+
+    after_script:
+
+    - /root/.dotnet/tools/trx2junit testRes.trx
+
+    artifacts:
+
+        when: always
+
+        paths: ['testRes.xml']
+
+        expose_as: 'testing report'
+
+        reports:
+
+            junit: testRes.xml
+
+  
+  
+
+deploy-job:
+
+    stage: deploy
+
+    script:
+
+        - echo "Deploying application..."
+
+        - echo "Application successfully deployed."
 ```
