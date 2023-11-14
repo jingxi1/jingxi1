@@ -207,16 +207,12 @@ public static class RestUtilityLib
     /// </summary>
     /// <param name="str"></param>
     /// <returns></returns>
-    public static async Task<JsonNode> ToJsonNodeAsync(this Task<string> str)
+    public static async Task<JsonNode> String2JsonNodeAsync(this Task<string> str)
     {
         var s = await str;
-        return await Task.FromResult((s) != "" ? JsonNode.Parse(s) : JsonNode.Parse("{}"));
+        return s != "" ? JsonNode.Parse(s)! : JsonNode.Parse("{}")!;
     }
-    public static JsonNode ToJsonNode(this string str)
-    {
-
-        return (str) != "" ? JsonNode.Parse(str) : JsonNode.Parse("{}")!;
-    }
+    public static JsonNode ToJsonNode(this string str) => (str) != "" ? JsonNode.Parse(str)! : JsonNode.Parse("{}")!;
     /// <summary>
     /// 将当前node加入到一个空的节点中,标记头
     /// </summary>
