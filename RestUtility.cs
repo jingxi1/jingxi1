@@ -42,19 +42,7 @@ public static class RestUtilityLib
         option?.Invoke(sp, opt);
         return new RestClient(sp.GetRequiredService<HttpClient>());
     }
-    /// <summary>
-    /// 将request 附加到client上执行
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="client"></param>
-    /// <param name="GetTokenFunc">处理更新token的函数,当产生认证失败则认为是认证问题</param>
-    /// <returns></returns>
-    public static Task<RestResponse> AttachClientToExecuteAsync(this RestRequest request, RestClient client)
-    {
 
-        return client.ExecuteAsync(request);
-
-    }
     public static RestResponse AttachClientToExecute(this RestRequest request, RestClient client)
     {
         return client.Execute(request);
@@ -105,45 +93,98 @@ public static class RestUtilityLib
     /// </summary>
     /// <param name="response"></param>
     /// <returns></returns>
-    public static async Task<string> GetTaskResultStringAsync(this Task<RestResponse> response, ILogger logger = null/*,RestClient client, Func<RestClient, string>? GetTokenFunc = null*/)
+    public static async Task<string> Response2StringAsyncWithLog(this Task<RestResponse> response, ILogger logger = null/*,RestClient client, Func<RestClient, string>? GetTokenFunc = null*/)
     {
         var rp = await response;
         if (rp.StatusCode == System.Net.HttpStatusCode.OK || rp.StatusCode == System.Net.HttpStatusCode.Accepted
             || rp.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
+            if (logger != null)
+            {
+                logger.LogInformation($"{rp.StatusCode.ToString()}  {DateTimeOffset.Now.ToUnixTimeSeconds()} {rp.Request.Method.ToString()}=>{rp.ResponseUri.ToString()}");
+            }
             return ((rp).Content)!;
         }
-        else if (rp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            throw new AuthenticationException();
-        }
+        //else if (rp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        //{
+        //    throw new UnauthorizedAccessException();
+        //}
         else
         {
             if (logger != null)
             {
-                logger.LogCritical($"rest lib unknown issue of {rp.StatusCode.ToString()}");
+                logger.LogCritical($"rest lib unknown issue of {rp.StatusCode.ToString()} {rp.Request.Resource} {rp.Request.Method.ToString()}");
             }
             return ((rp).Content)!;
         }
     }
-
     /// <summary>
-    /// 处理结构,返回jsonnode
+    /// 将request 附加到client上执行
     /// </summary>
-    /// <param name="response"></param>
+    /// <param name="request"></param>
+    /// <param name="client"></param>
+    /// <param name="GetTokenFunc">处理更新token的函数,当产生认证失败则认为是认证问题</param>
     /// <returns></returns>
-    public static async Task<JsonNode> GetTaskResultJsonNodeAsync(this Task<RestResponse> response, ILogger logger = null)
+    public static Task<RestResponse> AttachClientToExecuteAsync(this RestRequest request, RestClient client)
     {
-        var rp = await response.GetTaskResultStringAsync(logger);
-        if (rp != "")
+
+        return client.ExecuteAsync(request);
+
+    }
+    /// <summary>
+    /// 处理请求,当认证失败时,调用GetTokenFunc,重新获取token,并重新执行请求
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="client"></param>
+    /// <param name="GetTokenFunc"></param>
+    /// <returns></returns>
+    /// <exception cref="UnauthorizedAccessException"></exception>
+    public static async Task<RestResponse> ExeTaskResponseAsync(this RestRequest request, RestClient client, Func<RestClient, string>? GetTokenFunc = null)
+    {
+        var rp = await client.ExecuteAsync(request);
+        //if (rp.StatusCode == System.Net.HttpStatusCode.OK || rp.StatusCode == System.Net.HttpStatusCode.Accepted
+        //               || rp.StatusCode == System.Net.HttpStatusCode.NotFound)
+        //{
+        //    return rp;//((rp).Content)!;
+        //}
+        if (rp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            return JsonNode.Parse(rp)!;
+            if (GetTokenFunc != null)
+            {
+              
+                request.RequestAddAuth(GetTokenFunc(client));
+                return await client.ExecuteAsync(request);
+                //.GetTaskResultStringAsync();
+                //.GetTaskResultStringAsync(client, GetTokenFunc);
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("NXApi Authorization Access Faild.");
+            }
         }
         else
         {
-            return JsonNode.Parse("{}")!;
+            return rp;
         }
     }
+
+    ///// <summary>
+    ///// 处理结构,返回jsonnode
+    ///// </summary>
+    ///// <param name="response"></param>
+    ///// <returns></returns>
+    //public static async Task<JsonNode> GetTaskResultJsonNodeAsync(this Task<RestResponse> response, ILogger logger = null)
+    //{
+    //    var rp = await response.GetTaskResultStringAsync(logger);
+    //    if (rp != "")
+    //    {
+    //        return JsonNode.Parse(rp)!;
+    //    }
+    //    else
+    //    {
+    //        return JsonNode.Parse("{}")!;
+    //    }
+    //}
     /// <summary>
     /// 同步处理jsonnode
     /// </summary>
@@ -195,7 +236,8 @@ public static class RestUtilityLib
     /// <param name="head"></param>
     /// <param name="source"></param>
     /// <returns></returns>
-    public static JsonNode NodeAddMore(this JsonNode TargetNode, string head, JsonNode source)
+    public static JsonNode NodeAddMore(
+        this JsonNode TargetNode, string head, JsonNode source)
     {
         TargetNode.AsObject().Add(head, source);
         return TargetNode;
