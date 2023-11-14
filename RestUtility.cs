@@ -168,23 +168,23 @@ public static class RestUtilityLib
         }
     }
 
-    ///// <summary>
-    ///// 处理结构,返回jsonnode
-    ///// </summary>
-    ///// <param name="response"></param>
-    ///// <returns></returns>
-    //public static async Task<JsonNode> GetTaskResultJsonNodeAsync(this Task<RestResponse> response, ILogger logger = null)
-    //{
-    //    var rp = await response.GetTaskResultStringAsync(logger);
-    //    if (rp != "")
-    //    {
-    //        return JsonNode.Parse(rp)!;
-    //    }
-    //    else
-    //    {
-    //        return JsonNode.Parse("{}")!;
-    //    }
-    //}
+    /// <summary>
+    /// 处理结构,返回jsonnode
+    /// </summary>
+    /// <param name="response"></param>
+    /// <returns></returns>
+    public static async Task<JsonNode> Response2JsonNodeAsync(this Task<RestResponse> response, ILogger logger = null)
+    {
+        var rp = await response.Response2StringAsyncWithLog(logger);
+        if (rp != "")
+        {
+            return JsonNode.Parse(rp)!;
+        }
+        else
+        {
+            return JsonNode.Parse("{}")!;
+        }
+    }
     /// <summary>
     /// 同步处理jsonnode
     /// </summary>
