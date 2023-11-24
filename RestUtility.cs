@@ -43,10 +43,14 @@ public static class RestUtilityLib
         return new RestClient(sp.GetRequiredService<HttpClient>());
     }
 
-    public static RestResponse AttachClientToExecute(this RestRequest request, RestClient client)
-    {
-        return client.Execute(request);
-    }
+    //public static RestResponse AttachClientToExecute(this RestRequest request, RestClient client)
+    //{
+    //    return client.Execute(request);
+    //}
+    //public static Task<RestResponse> AttachClientToExecuteAsync(this RestRequest request, RestClient client)
+    //{
+    //    return client.ExecuteAsync(request);
+    //}
     public static string ResponseString(this RestResponse response)
     {
         return response.Content!;
@@ -141,7 +145,33 @@ public static class RestUtilityLib
             return rp;
         }
     }
-
+    /// <summary>
+    /// 处理请求,当认证失败时,调用GetTokenFunc,重新获取token,并重新执行请求
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="client"></param>
+    /// <param name="GetTokenFunc"></param>
+    /// <returns></returns>
+    /// <exception cref="UnauthorizedAccessException"></exception>
+    public static  RestResponse ExeTaskResponse(this RestRequest request, RestClient client, Func<RestClient, string>? GetTokenFunc = null)
+    {
+        var rp =  client.Execute(request);
+        //if (rp.StatusCode == System.Net.HttpStatusCode.OK || rp.StatusCode == System.Net.HttpStatusCode.Accepted
+        //               || rp.StatusCode == System.Net.HttpStatusCode.NotFound)
+        //{
+        //    return rp;//((rp).Content)!;
+        //}
+        if (rp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            return GetTokenFunc == null
+                ? throw new UnauthorizedAccessException("NXApi Authorization Access Faild.")
+                :  client.Execute(request.RequestAddAuth(GetTokenFunc(client)));
+        }
+        else
+        {
+            return rp;
+        }
+    }
     /// <summary>
     /// 处理结构,返回jsonnode
     /// </summary>
