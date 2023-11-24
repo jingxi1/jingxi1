@@ -23,7 +23,7 @@ public static class RestUtilityLib
         option?.Invoke(opt);
         return new RestClient(opt);
     }
-    public static RestClientOptions NSSLOption() => new RestClientOptions()
+    public static RestClientOptions IgnoreSSLOption() => new RestClientOptions()
     {
         RemoteCertificateValidationCallback =
             (sender, certificate, chain, sslPolicyErrors) => true
